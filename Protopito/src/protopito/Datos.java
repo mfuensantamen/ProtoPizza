@@ -3,7 +3,7 @@ package protopito;
 public class Datos {
 
 	private boolean autoClickerPulsado = false;
-	private double num = 250; // numero inicial
+	private double num = 0; // numero inicial
 	private double nps = 0; // numeros/s iniciales
 	private double recordMaximo = 0;
 	private double clickIncremento = 1;

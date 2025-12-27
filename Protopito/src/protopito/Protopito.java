@@ -20,20 +20,34 @@ public class Protopito {
 
 	public Protopito() {
 
-		// ACTIVAS nombre / coste / incrementoCoste / umbralDesbloqueo /
-		// incrementoClicker
-		mejorasClicker.add(new Mejora("Clicker", 10, 1.05, 10, accion -> datos.subirClicker(0.15)));
-		mejorasClicker.add(new Mejora("Auto Clicker", 100, 1.05, 100, accion -> datos.subirAutoClicker()));
-		// PASIVAS nombre / coste / incrementoCoste / umbralDesbloqueo /
-		// incrementoClicker
-		mejoras.add(new Mejora("Infra Pito", 500, 1.05, 500, accion -> datos.subirNPS(1.45)));
-		mejoras.add(new Mejora("Micro Pito", 750, 1.05, 750, accion -> datos.subirNPS(5.95)));
-		mejoras.add(new Mejora("Pitilin", 1000, 1.15, 1000, accion -> datos.subirNPS(10.15)));
-		mejoras.add(new Mejora("Pito", 5000, 1.15, 5000, accion -> datos.subirNPS(80.8)));
-		mejoras.add(new Mejora("Super Pito", 10000, 1.15, 10000, accion -> datos.subirNPS(200.50)));
-		mejoras.add(new Mejora("Mega Pito", 50000, 1.15, 50000, accion -> datos.subirNPS(400.5)));
-		mejoras.add(new Mejora("Hyper Pito", 100000, 1.15, 100000, accion -> datos.subirNPS(1030.50)));
-		mejoras.add(new Mejora("Ultra Pito", 500000, 1.15, 500000, accion -> datos.subirNPS(10000)));
+		// ===== MEJORAS CLICKER (ACTIVAS) =====
+		// nombre / coste / incrementoCoste / umbralDesbloqueo / accion
+
+		mejorasClicker.add(new Mejora("Contratar Cocineros", 120, 1.18, 100, accion -> datos.subirAutoClicker()));
+		mejorasClicker.add(new Mejora("Experiencia del Chef", 10, 1.12, 0, accion -> datos.subirClicker(0.5)));
+		mejorasClicker.add(new Mejora("Cuchillo bien afilado", 80, 1.12, 50, accion -> datos.subirClicker(1.0)));
+		mejorasClicker.add(new Mejora("Manos de Maestro", 1_500, 1.15, 1_000, accion -> datos.subirClicker(6.0)));
+
+		// ===== MEJORAS PASIVAS (NPS) =====
+		// nombre / coste / incrementoCoste / umbralDesbloqueo / accion
+
+		mejoras.add(new Mejora("Tabla de Pizzería", 200, 1.12, 150, accion -> datos.subirNPS(0.8)));
+		mejoras.add(new Mejora("Air Fryer", 650, 1.12, 500, accion -> datos.subirNPS(2.5)));
+		mejoras.add(new Mejora("Horno de piedra", 1_800, 1.14, 1_200, accion -> datos.subirNPS(7.5)));
+		mejoras.add(new Mejora("Horno doble", 6_000, 1.15, 4_500, accion -> datos.subirNPS(25)));
+		mejoras.add(new Mejora("Horno industrial", 18_000, 1.15, 15_000, accion -> datos.subirNPS(85)));
+		mejoras.add(new Mejora("Cinta automática", 55_000, 1.16, 45_000, accion -> datos.subirNPS(260)));
+		mejoras.add(new Mejora("Amasadora automática", 150_000, 1.16, 120_000, accion -> datos.subirNPS(750)));
+		mejoras.add(new Mejora("Fábrica de masa", 450_000, 1.17, 350_000, accion -> datos.subirNPS(2200)));
+		mejoras.add(new Mejora("Línea de producción", 1_200_000, 1.17, 900_000, accion -> datos.subirNPS(6000)));
+		mejoras.add(new Mejora("Central pizzera", 3_200_000, 1.18, 2_500_000, accion -> datos.subirNPS(16000)));
+		mejoras.add(new Mejora("Megafactoría", 9_000_000, 1.18, 7_000_000, accion -> datos.subirNPS(45000)));
+		mejoras.add(new Mejora("PizzaCorp", 25_000_000, 1.19, 20_000_000, accion -> datos.subirNPS(130000)));
+		mejoras.add(new Mejora("Red mundial de franquicias", 75_000_000, 1.19, 60_000_000,
+				accion -> datos.subirNPS(400000)));
+		mejoras.add(new Mejora("Impresora 3D de pizzas", 220_000_000, 1.20, 180_000_000,
+				accion -> datos.subirNPS(1_200_000)));
+
 	}
 
 	public static void main(String[] args) {
