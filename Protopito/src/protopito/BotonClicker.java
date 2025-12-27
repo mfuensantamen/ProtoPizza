@@ -11,10 +11,13 @@ import java.awt.RenderingHints;
 
 import javax.swing.ButtonModel;
 import javax.swing.JButton;
+import javax.swing.Timer;
 
 @SuppressWarnings("serial")
 public class BotonClicker extends JButton {
 	private int radius = 80;
+
+	private long ultimoFlashMs = 0;
 
 	// colores
 	private Color normalBg = new Color(210, 255, 210);
@@ -89,4 +92,36 @@ public class BotonClicker extends JButton {
 		this.pressedBg = pressed;
 		repaint();
 	}
+
+	public void flash(Color flashColor, int ms) {
+
+		long ahora = System.currentTimeMillis();
+
+		// si el flash llega mas rapido que 350ms se ignora
+		if (ahora - ultimoFlashMs < 350) {
+			return;
+		}
+		ultimoFlashMs = ahora;
+
+		// guardar colores actuales
+		Color oldNormal = normalBg;
+		Color oldHover = hoverBg;
+		Color oldPressed = pressedBg;
+
+		// poner flash en todos los estados para que se vea siempre
+		normalBg = flashColor;
+		hoverBg = flashColor;
+		pressedBg = flashColor;
+		repaint();
+
+		Timer t = new Timer(ms, ejecutar -> {
+			normalBg = oldNormal;
+			hoverBg = oldHover;
+			pressedBg = oldPressed;
+			repaint();
+		});
+		t.setRepeats(false);
+		t.start();
+	}
+
 }

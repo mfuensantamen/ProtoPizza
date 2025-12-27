@@ -89,7 +89,7 @@ public class Interfaz extends JFrame {
 		lblNps.setFont(new Font("Bahnschrift", Font.ITALIC, 18));
 		lblNps.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-		lblNpc = new JLabel("+0.00 por Click ");
+		lblNpc = new JLabel("+0.00 por Click / Autoclick cada 0.00s");
 		lblNpc.setForeground(new Color(255, 228, 225));
 		lblNpc.setFont(new Font("Bahnschrift", Font.ITALIC, 18));
 		lblNpc.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -212,20 +212,25 @@ public class Interfaz extends JFrame {
 
 	public void render() {
 
-		// revirificar seccion de filas de mejoras(?)
-//		if (labelsCoste.size() != mejoras.size() || botonesCompra.size() != mejoras.size()) {
-//			construirMejorasUI();
-//		}
-
 		// actualizar nums
 		lblNum.setText("" + (int) datos.getNum());
 		lblNps.setText(String.format("Nums/s: %.2f ", datos.getNps()));
-		lblNpc.setText(String.format("+%.2f por Click ", (datos.getClickIncremento() + datos.getNps() / 50)));
 
-		// y además labelsCoste/botonesCompra contienen PRIMERO las filas de clicker y
-		// LUEGO las pasivas.
-		// Ahora lo renderizamos en 2 bucles con offset.
+		double npc = datos.getClickIncremento() + datos.getNps() / 50;
+		double npcAuto = npc / datos.getPeriodoAutoClicker();
+		if (datos.getNivelAutoClicker() == 0) {
+			// si no esta comprado no se enseña infor
+			lblNpc.setText(String.format("+%.2f por Click ", npc));
+		} else {
+			// cuando se compra se enseña
+			lblNpc.setText(String.format("+%.2f por Click / Autoclick %.2f ", npc, npcAuto));
+		}
 
+		if (datos.autoCickerPulsado()) {
+			btnClicker.flash(new Color(230, 220, 255), 100);
+		}
+
+		// renderizamos en 2 bucles con offset.
 		// 1) Render de mejoras CLICK (primer bloque de la lista)
 		for (int i = 0; i < mejorasClicker.size(); i++) {
 			Mejora m = mejorasClicker.get(i);
@@ -263,4 +268,5 @@ public class Interfaz extends JFrame {
 			}
 		}
 	}
+
 }
