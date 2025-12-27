@@ -1,4 +1,4 @@
-package protopito;
+package protoPizza;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -6,15 +6,23 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.text.NumberFormat;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -24,15 +32,18 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 
-@SuppressWarnings("serial")
 public class Interfaz extends JFrame {
+// clase para todo el apartado visual
 
 	// etiquetas
 	private JLabel lblNum;
 	private JLabel lblNps;
 	private JLabel lblNpc;
 	// boton
-	private BotonClicker btnClicker;
+	ImageIcon iconNormal;
+	ImageIcon iconBig;
+	private JLabel pizzaLabel;
+//	private BotonClicker btnClicker;
 	// panel
 	private JPanel panelMejoras;
 	// seccion con scroll
@@ -47,21 +58,21 @@ public class Interfaz extends JFrame {
 
 	Font emoji = new Font("Segoe UI Emoji", Font.BOLD, 16);
 
-	// === CAMBIO: colores centralizados para estados del botón ===
+	// colores centralizados para estados del boton
 	private static final Color BTN_VERDE_OK = new Color(200, 255, 200);
 	private static final Color BTN_GRIS_NO = new Color(210, 210, 210);
 	private static final Color BTN_ROJO_LOCK = new Color(250, 180, 180);
 
-	// === CAMBIO: NumberFormat en español sin decimales + con separador de miles
-	// ===
+	// NumberFormat en español sin decimales + con separador de miles
 	private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("es-ES"));
 	{
 		nf.setMaximumFractionDigits(0);
 		nf.setMinimumFractionDigits(0);
-		nf.setGroupingUsed(true); // puntos en miles
+		nf.setGroupingUsed(true);
+		// puntos en miles
 	}
 
-	public Interfaz(Datos datos, List<Mejora> mejoras, List<Mejora> mejorasClicker) {
+	public Interfaz(Datos datos, List<Mejora> mejoras, List<Mejora> mejorasClicker) throws IOException {
 		this.datos = datos;
 		this.mejoras = mejoras;
 		this.mejorasClicker = mejorasClicker;
@@ -72,7 +83,7 @@ public class Interfaz extends JFrame {
 	}
 
 	// panel de arriba + central
-	private void construirUI() {
+	private void construirUI() throws IOException {
 		setTitle("ProtoPito - Incremental");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		// tamaño de ventana
@@ -82,7 +93,7 @@ public class Interfaz extends JFrame {
 
 		// panel de arriba
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setPreferredSize(new Dimension(800, 300));
+		panelSuperior.setPreferredSize(new Dimension(800, 350));
 		panelSuperior.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		panelSuperior.setBackground(new Color(150, 150, 170));
 		panelSuperior.setLayout(new BorderLayout(0, 0));
@@ -98,11 +109,9 @@ public class Interfaz extends JFrame {
 		// etiqueta num
 		lblNum = new JLabel("0");
 		lblNum.setForeground(new Color(255, 215, 0));
-		lblNum.setFont(new Font("Bahnschrift", Font.BOLD, 60));
+		lblNum.setFont(new Font("Consolas", Font.BOLD, 46));
 		lblNum.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelNums.add(lblNum);
-		// separador
-		panelNums.add(Box.createVerticalStrut(8));
 
 		// etiqueta nps
 		lblNps = new JLabel("ERROR");
@@ -118,21 +127,28 @@ public class Interfaz extends JFrame {
 		lblNpc.setBorder(new EmptyBorder(6, 0, 6, 0));
 		panelNums.add(lblNps);
 		panelNums.add(lblNpc);
-		// separador
-		panelNums.add(Box.createVerticalStrut(20));
 
-		// boton grande
-		btnClicker = new BotonClicker();
-		btnClicker.setText("[ Púlsame! ]");
-		btnClicker.setFont(new Font("Trebuchet MS", Font.BOLD, 26));
-		btnClicker.setForeground(new Color(60, 60, 60));
-		btnClicker.setAlignmentX(Component.CENTER_ALIGNMENT);
+		// PIZZAA
+		// Carga y prepara dos iconos: normal y pulsado
+		var url = getClass().getResource("/pizza.png");
+		if (url == null) {
+			throw new RuntimeException("No se encuentra el archivo pizza.png");
+		}
+		BufferedImage pizzaImg = ImageIO.read(url);
 
-		// tamaño del boton
-		btnClicker.setPreferredSize(new Dimension(360, 110));
-		btnClicker.setMaximumSize(new Dimension(360, 110));
+		this.iconNormal = new ImageIcon(pizzaImg.getScaledInstance(200, 200, Image.SCALE_SMOOTH));
+		this.iconBig = new ImageIcon(pizzaImg.getScaledInstance(207, 207, Image.SCALE_SMOOTH));
 
-		panelNums.add(btnClicker);
+		pizzaLabel = new JLabel(this.iconNormal);
+		pizzaLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		pizzaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		pizzaLabel.setPreferredSize(new Dimension(208, 208));
+		pizzaLabel.setMinimumSize(new Dimension(208, 208));
+		pizzaLabel.setMaximumSize(new Dimension(208, 208));
+		panelNums.add(pizzaLabel);
+
+		// PIZZAA
+
 		// separador
 		panelNums.add(Box.createVerticalStrut(20));
 		// etiqueta pieBoton
@@ -158,11 +174,33 @@ public class Interfaz extends JFrame {
 
 	// accion de clicker
 	private void conectarEventos() {
-		btnClicker.addActionListener(e -> {
-			datos.click();
-			// actualizar render
-			render();
+		feedbackBotonPizza();
+		render();
+	}
+
+	public void feedbackBotonPizza() {
+		// Feedback: zoom rápido al hacer click
+		int feedbackMs = 90;
+
+		pizzaLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				pizzaLabel.setIcon(iconBig);
+
+				// Vuelve al icono normal tras un instante
+				new javax.swing.Timer(feedbackMs, ev -> {
+					pizzaLabel.setIcon(iconNormal);
+					((javax.swing.Timer) ev.getSource()).stop();
+				}).start();
+				// TU ACCIÓN DE CLICK
+				datos.click();
+				// actualizar render
+				render();
+			}
+
 		});
+		pizzaLabel.revalidate();
+		pizzaLabel.repaint();
 	}
 
 	// filas de mejoras
@@ -175,7 +213,7 @@ public class Interfaz extends JFrame {
 		for (int i = 0; i < mejorasClicker.size(); i++) {
 			Mejora m2 = mejorasClicker.get(i);
 
-			FlashPanel fila = new FlashPanel(new Color(245, 245, 245)); // mismo que panelMejoras
+			FlashPanel fila = new FlashPanel(new Color(245, 245, 245));
 			fila.setLayout(new BorderLayout(10, 0));
 			fila.setBorder(new EmptyBorder(4, 4, 4, 4));
 
@@ -186,8 +224,8 @@ public class Interfaz extends JFrame {
 			RoundedButton btnCompra = new RoundedButton(nf.format(m2.getCoste()), 14);
 			btnCompra.setFont(emoji);
 			btnCompra.setFocusPainted(false);
-			btnCompra.setBackground(BTN_VERDE_OK); // (render() lo ajustará según estado)
-			btnCompra.setPreferredSize(new Dimension(72, 34)); // tamaño fijo bonito
+			btnCompra.setBackground(BTN_VERDE_OK);
+			btnCompra.setPreferredSize(new Dimension(72, 34));
 			btnCompra.setMaximumSize(new Dimension(72, 34));
 			// centra texto bien
 			btnCompra.setHorizontalAlignment(SwingConstants.CENTER);
@@ -198,7 +236,7 @@ public class Interfaz extends JFrame {
 			btnCompra.addActionListener(ev -> {
 				if (datos.verificarCompra(m2.getCoste())) {
 					m2.comprar(datos);
-					fila.flash(new Color(210, 255, 210), 120); // flash verde suave
+					fila.flash(new Color(210, 255, 210), 120);
 					render();
 				}
 			});
@@ -216,7 +254,7 @@ public class Interfaz extends JFrame {
 		for (int i = 0; i < mejoras.size(); i++) {
 			Mejora m = mejoras.get(i);
 
-			FlashPanel fila = new FlashPanel(new Color(245, 245, 245)); // mismo que panelMejoras
+			FlashPanel fila = new FlashPanel(new Color(245, 245, 245));
 			fila.setLayout(new BorderLayout(10, 0));
 			fila.setBorder(new EmptyBorder(4, 4, 4, 4));
 
@@ -227,8 +265,8 @@ public class Interfaz extends JFrame {
 			RoundedButton btnCompra = new RoundedButton(nf.format(m.getCoste()), 14);
 			btnCompra.setFont(emoji);
 			btnCompra.setFocusPainted(false);
-			btnCompra.setBackground(BTN_VERDE_OK); // (render() lo ajustará según estado)
-			btnCompra.setPreferredSize(new Dimension(72, 34)); // tamaño fijo bonito
+			btnCompra.setBackground(BTN_VERDE_OK);
+			btnCompra.setPreferredSize(new Dimension(72, 34));
 			btnCompra.setMaximumSize(new Dimension(72, 34));
 			// centra texto bien
 			btnCompra.setHorizontalAlignment(SwingConstants.CENTER);
@@ -239,7 +277,8 @@ public class Interfaz extends JFrame {
 			btnCompra.addActionListener(ev -> {
 				if (datos.verificarCompra(m.getCoste())) {
 					m.comprar(datos);
-					fila.flash(new Color(210, 255, 210), 120); // flash verde suave
+					fila.flash(new Color(210, 255, 210), 120);
+					// flash verde suave
 					render();
 				}
 			});
@@ -260,8 +299,7 @@ public class Interfaz extends JFrame {
 
 	private String formatAbreviado(long n) {
 
-		final String[] sufijos = { "", // 10^0
-				"K", // 10^3
+		final String[] sufijos = { "", "K", // 10^3
 				"M", // 10^6
 				"B", // 10^9
 				"T", // 10^12
@@ -284,7 +322,7 @@ public class Interfaz extends JFrame {
 			indice++;
 		}
 
-		// evita cosas tipo 1000.0K (pasa a 1.00M)
+		// evitar que 1.0M salga como 1000.0K
 		if (valor >= 999.5 && indice < sufijos.length - 1) {
 			valor /= 1_000.0;
 			indice++;
@@ -301,7 +339,6 @@ public class Interfaz extends JFrame {
 
 	public void render() {
 
-		// === CAMBIO: forzamos entero para que no salgan decimales ===
 		lblNum.setText(nf.format((long) datos.getNum()));
 
 		lblNps.setText(String.format("🍕/s: %.2f ", datos.getNps()));
@@ -317,10 +354,10 @@ public class Interfaz extends JFrame {
 		}
 
 		if (datos.autoCickerPulsado()) {
-			btnClicker.flash(new Color(230, 220, 255), 100);
+			feedbackBotonPizza();
 		}
 
-		// 1) Render de mejoras CLICK (primer bloque de la lista)
+		// Render de mejoras activas primer bloque
 		for (int i = 0; i < mejorasClicker.size(); i++) {
 			Mejora m = mejorasClicker.get(i);
 			JLabel lbl = labelsCoste.get(i);
@@ -329,7 +366,7 @@ public class Interfaz extends JFrame {
 			boolean unlock = m.desbloquado(datos.getMaximo());
 
 			if (!unlock) {
-				// === ESTADO 1: bloqueado (candado) ===
+				// ESTADO bloqueado
 				lbl.setFont(emoji);
 				btn.setFont(emoji);
 				lbl.setText("🔒 Requiere " + (formatAbreviado((int) m.getCoste())) + " 🍕");
@@ -338,21 +375,20 @@ public class Interfaz extends JFrame {
 				btn.setEnabled(false);
 				btn.setCursor(Cursor.getDefaultCursor());
 			} else {
-				// === CAMBIO: estados separados (gris si no alcanza, verde si se puede) ===
 				lbl.setText(String.format("%s [ %d ]", m.getNombre(), m.getNivel()));
 
-				long coste = (long) m.getCoste(); // === CAMBIO: sin (int) para no romper a futuro ===
+				long coste = (long) m.getCoste();
 				btn.setText(formatAbreviado(coste));
 
 				boolean canBuy = datos.verificarCompra(m.getCoste());
 
 				if (canBuy) {
-					// ESTADO 2: se puede comprar
+					// ESTADO se puede comprar
 					btn.setBackground(BTN_VERDE_OK);
 					btn.setEnabled(true);
 					btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 				} else {
-					// ESTADO 3: desbloqueado pero no llega el dinero
+					// ESTADO desbloqueado pero no llega el dinero
 					btn.setBackground(BTN_GRIS_NO);
 					btn.setEnabled(false);
 					btn.setCursor(Cursor.getDefaultCursor());
@@ -360,7 +396,7 @@ public class Interfaz extends JFrame {
 			}
 		}
 
-		// 2) Render de mejoras NPS (segundo bloque)
+		// Render de mejoras pasivas segundo bloque
 		int offset = mejorasClicker.size();
 		for (int i = 0; i < mejoras.size(); i++) {
 			Mejora m = mejoras.get(i);
@@ -370,7 +406,7 @@ public class Interfaz extends JFrame {
 			boolean unlock = m.desbloquado(datos.getMaximo());
 
 			if (!unlock) {
-				// === ESTADO 1: bloqueado (candado) ===
+				// ESTADO bloqueado
 				lbl.setFont(emoji);
 				btn.setFont(emoji);
 				lbl.setText("🔒 Requiere " + (formatAbreviado((int) m.getCoste())) + " 🍕");
@@ -379,21 +415,20 @@ public class Interfaz extends JFrame {
 				btn.setEnabled(false);
 				btn.setCursor(Cursor.getDefaultCursor());
 			} else {
-				// === CAMBIO: estados separados (gris si no alcanza, verde si se puede) ===
 				lbl.setText(String.format("%s [ %d ]", m.getNombre(), m.getNivel()));
 
-				long coste = (long) m.getCoste(); // === CAMBIO: sin (int) para no romper a futuro ===
+				long coste = (long) m.getCoste();
 				btn.setText(formatAbreviado(coste));
 
 				boolean canBuy = datos.verificarCompra(m.getCoste());
 
 				if (canBuy) {
-					// ESTADO 2: se puede comprar
+					// ESTADO se puede comprar
 					btn.setBackground(BTN_VERDE_OK);
 					btn.setEnabled(true);
 					btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 				} else {
-					// ESTADO 3: desbloqueado pero no llega el dinero
+					// ESTADO desbloqueado pero no llega el dinero
 					btn.setBackground(BTN_GRIS_NO);
 					btn.setEnabled(false);
 					btn.setCursor(Cursor.getDefaultCursor());

@@ -1,8 +1,9 @@
-package protopito;
+package protoPizza;
 
 import java.util.function.Consumer;
 
 public class Mejora {
+// clase para la personalizacion y comportamiento de las mejoras pasivas y activas
 
 	private Consumer<Datos> accion;
 

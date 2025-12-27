@@ -1,17 +1,22 @@
-package protopito;
+package protoPizza;
 
 public class Datos {
+// clase donde se guardas los datos base y funcionalidades esenciales del juego principal
 
 	private boolean autoClickerPulsado = false;
-	private double num = 0; // numero inicial
-	private double nps = 0; // numeros/s iniciales
+	private double num = 9999990; // n de pizzas inicial
+	private double nps = 0; // n de pizzas/s iniciales
 	private double recordMaximo = 0;
 	private double clickIncremento = 1;
-	private double periodoInicial = 1.0; // el clicker clickara automaticamente cada 4 segundos
+	// el clicker clickara automaticamente cada 1 segundo al inicio
+	private double periodoInicial = 1.0;
 	private double periodoAutoClicker = periodoInicial;
-	private double contadorAutoClicker = 0.0; // cuenta el tiempo que pasa desde ultimo clik
+	// cuenta el tiempo que pasa desde ultimo clik
+	private double contadorAutoClicker = 0.0;
 	private double decrementoNivel = 0.033;
+	// autoclick no clickara mas rapido que esto
 	private double periodoMinimo = 0.05;
+	// nivel inicial de autoclick es decir desactivado
 	private int nivelAutoClicker = 0;
 
 	public void subirAutoClicker() {
@@ -32,8 +37,8 @@ public class Datos {
 		}
 	}
 
-	// numeros actuales + numeros + numeros/s * 0.025 (la frecuencoia de
-	// actualizacion)
+	// numeros actuales + numeros + numeros/s * 0.015 frecuencia de render
+	// actualizado
 	public void reloj(double diferenciaTiempo) {
 
 		num += nps * diferenciaTiempo;

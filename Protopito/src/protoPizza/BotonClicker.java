@@ -1,5 +1,5 @@
 
-package protopito;
+package protoPizza;
 
 import java.awt.Color;
 import java.awt.Cursor;
@@ -13,10 +13,11 @@ import javax.swing.ButtonModel;
 import javax.swing.JButton;
 import javax.swing.Timer;
 
-@SuppressWarnings("serial")
 public class BotonClicker extends JButton {
-	private int radius = 80;
+// boton central grande del clicker
 
+	private int radius = 80;
+	// contador para flash morado del autoclick
 	private long ultimoFlashMs = 0;
 
 	// colores
@@ -24,15 +25,13 @@ public class BotonClicker extends JButton {
 	private Color hoverBg = new Color(180, 245, 180);
 	private Color pressedBg = new Color(140, 230, 140);
 	private Color disabledBg = new Color(210, 210, 210);
-
 	private Color borderColor = new Color(90, 140, 90);
 
 	public BotonClicker() {
-		super();
-
+		// para que cuando pase el raton por encima cambie de estado
 		setRolloverEnabled(true);
 
-		// por defecto todo
+		// establecer por false todo
 		setContentAreaFilled(false);
 		setBorderPainted(false);
 		setFocusPainted(false);
@@ -40,9 +39,7 @@ public class BotonClicker extends JButton {
 
 		// padding
 		setMargin(new Insets(20, 40, 20, 40));
-
 		setFont(getFont().deriveFont(Font.BOLD, 22f));
-
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 	}
 
