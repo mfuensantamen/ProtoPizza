@@ -78,9 +78,14 @@ public class ProtoPizzaAPP {
 	// invokeLater para crear y mostrar la interfaz
 	// dentro mas adelante en su propio hilo de Swing (??????)
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(() -> {
-			new ProtoPizzaAPP().raiz();
-		});
+		try {
+			SwingUtilities.invokeLater(() -> {
+				new ProtoPizzaAPP().raiz();
+			});
+		} catch (Exception e) {
+			System.err.println("Ha fallado la raiz" + e.getMessage());
+		}
+
 	}
 
 	// Construir y muestrar interfaz arranca mejoras yarranca el timer (motor)

@@ -17,6 +17,8 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -40,6 +42,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 
@@ -84,7 +87,7 @@ public class Interfaz extends JFrame {
 
 	// fuente
 	public static Font fuente = new Font("Gadugi", Font.BOLD, 17);
-	public static Locale localeES = Locale.of("es", "ES");
+	public static Locale localeES = Locale.forLanguageTag("es-ES");
 	private static final NumberFormat FORMATO_ENTERO_ES;
 
 	static {
@@ -104,6 +107,24 @@ public class Interfaz extends JFrame {
 
 	// formato de numeros en español sin decimales + separador de puntos
 	private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("es-ES"));
+
+	// tiempo de ejecucion
+
+	public Timer timerPartida = null;
+	private JPanel panelTiempo;
+	private JLabel lblTiempo;
+	int contador = 0;
+
+	public int timerPartida() {
+		timerPartida = new Timer(1000, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				contador++;
+			}
+		});
+		return contador;
+	}
+
 	{
 		nf.setMaximumFractionDigits(0);
 		nf.setMinimumFractionDigits(0);
@@ -169,6 +190,24 @@ public class Interfaz extends JFrame {
 		pieBoton.setBorder(new EmptyBorder(0, 0, 6, 0));
 		panelSuperior.add(pieBoton, BorderLayout.SOUTH);
 
+		panelTiempo = new JPanel();
+		panelTiempo.setPreferredSize(new Dimension(0, 40));
+		panelTiempo.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		panelTiempo.setAlignmentY(Component.TOP_ALIGNMENT);
+		panelTiempo.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelTiempo.setBorder(new EmptyBorder(0,0,0,0));
+		panelTiempo.setLayout(new BorderLayout(0, 0));
+		panelTiempo.setOpaque(false);
+		
+		lblTiempo = new JLabel("");
+		lblTiempo.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTiempo.setForeground(new Color(255, 215, 0));
+		lblTiempo.setText("" + contador);
+		lblTiempo.setFont(new Font("Consolas", Font.BOLD, 20));
+		
+		panelTiempo.add(lblTiempo, BorderLayout.NORTH);
+		panelNums.add(panelTiempo);
+
 		// numero grande central del recurso
 		lblNum = new JLabel("0");
 		lblNum.setForeground(new Color(255, 215, 0));
@@ -226,10 +265,17 @@ public class Interfaz extends JFrame {
 	// feedback de hacer el boton de la pizza reaccione a click
 	private void feedbackBotonPizza() {
 		final int tiempoFeedback = 90;
+		timerPartida();
 		// si el ususario clicka la pizza
 		etiquetaPizza.addMouseListener(new MouseAdapter() {
+
 			@Override
 			public void mousePressed(MouseEvent e) {
+
+				if (timerPartida != null) {
+					timerPartida.start();
+				}
+				
 				// se hace grande
 				etiquetaPizza.setIcon(iconoPizzaGrande);
 				// por 90ms
@@ -478,6 +524,8 @@ public class Interfaz extends JFrame {
 		// variables abreviadas
 		double nps = datos.getNps();
 		double npc = datos.getClickIncremento() + nps / 50.0;
+
+		lblTiempo.setText("Tiempo de Partida: " + contador);
 
 		// si estan vacias se sale del procedimiento para evitar errores
 		if (botonesMejoras.isEmpty())
