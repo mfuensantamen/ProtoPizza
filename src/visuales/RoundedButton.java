@@ -1,4 +1,4 @@
-package protoPizza;
+package visuales;
 
 import java.awt.Color;
 import java.awt.FontMetrics;

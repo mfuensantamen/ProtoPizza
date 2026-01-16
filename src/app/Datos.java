@@ -1,4 +1,4 @@
-package protoPizza;
+package app;
 
 public class Datos {
 // clase donde se guardas los datos base y funcionalidades esenciales del juego principal

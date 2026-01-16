@@ -1,10 +1,12 @@
-package protoPizza;
+package app;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+
+import integracion.Interfaz;
 
 public class ProtoPizzaAPP {
 // clase para la ejecucion de la app final, controla el timer interno el "motor" y parametros de las mejoras

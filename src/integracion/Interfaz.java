@@ -1,4 +1,4 @@
-package protoPizza;
+package integracion;
 
 /**
  * Proyecto ProtoPizza.
@@ -45,7 +45,12 @@ import javax.swing.Timer;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
-import javax.swing.border.LineBorder;
+
+
+import app.Datos;
+import app.Mejora;
+import visuales.PizzaFXPane;
+import visuales.RoundedButton;
 
 // clase que refresca y genera elementos de interfaz visual
 public class Interfaz extends JFrame {
@@ -125,8 +130,12 @@ public class Interfaz extends JFrame {
 	boolean contadorClicker = false;
 	double cps;
 
+	long tiempoPasado;
+
 	public double contadorClicks() {
+
 		timerClicks = new Timer(1000, new ActionListener() {
+
 			@Override
 			public void actionPerformed(ActionEvent event) {
 
@@ -135,6 +144,20 @@ public class Interfaz extends JFrame {
 					cps = contadorClicks - ultimosClicks;
 					ultimosClicks = contadorClicks;
 				}
+			}
+		});
+
+		return contadorClicks;
+	}
+
+	public double reducirContador() {
+
+		new Timer(50, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+
+				contadorClicks -= contadorClicks * .1;
+				refrescarInterfaz();
 			}
 		});
 		return contadorClicks;
@@ -282,8 +305,10 @@ public class Interfaz extends JFrame {
 		panelSuperior.add(panelDerecha, BorderLayout.EAST);
 
 		lblClicks = new JLabel("");
+		lblClicks.setVerticalAlignment(SwingConstants.TOP);
+		lblClicks.setForeground(new Color(255, 228, 225));
 		lblClicks.setHorizontalAlignment(SwingConstants.CENTER);
-		lblClicks.setFont(new Font("Consolas", Font.BOLD, 20));
+		lblClicks.setFont(new Font("Consolas", Font.BOLD, 30));
 		panelDerecha.add(lblClicks);
 
 		// panel inferior de la interfaz, mejoras
@@ -576,7 +601,8 @@ public class Interfaz extends JFrame {
 		if (cps == 1 || cps == 0) {
 			lblClicks.setText("");
 		} else {
-			lblClicks.setText("" + cps);
+			lblClicks.setText(String.format("%.2f", cps));
+
 		}
 
 		if (segundos < 10) {

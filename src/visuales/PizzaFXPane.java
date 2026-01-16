@@ -1,4 +1,4 @@
-package protoPizza;
+package visuales;
 
 /**
  * Proyecto ProtoPizza.
@@ -27,6 +27,8 @@ import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+
+import integracion.Interfaz;
 
 /**
  * Panel de efectos alrededor de la pizza (halos, textos flotantes, feedback de

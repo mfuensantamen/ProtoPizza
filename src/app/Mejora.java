@@ -1,4 +1,4 @@
-package protoPizza;
+package app;
 
 // para que lo que envie una accion inmediata que se ejecuta sobre datos
 // Se usa para aplicar efectos de mejoras mediante lambdas.
