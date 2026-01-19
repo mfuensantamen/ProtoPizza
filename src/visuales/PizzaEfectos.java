@@ -34,7 +34,7 @@ import integracion.Interfaz;
  * Panel de efectos alrededor de la pizza (halos, textos flotantes, feedback de
  * autoclick). Solo efectos visuales; no modifica el modelo directamente.
  */
-public class PizzaFXPane extends JLayeredPane {
+public class PizzaEfectos extends JLayeredPane {
 
 	private final JLabel pizzaLabel;
 
@@ -80,7 +80,7 @@ public class PizzaFXPane extends JLayeredPane {
 	private final List<FloatingFX> floats = new ArrayList<>();
 	private final Timer animTimer;
 
-	public PizzaFXPane(JLabel pizzaLabel) {
+	public PizzaEfectos(JLabel pizzaLabel) {
 		setOpaque(false);
 		setLayout(null);
 		this.pizzaLabel = pizzaLabel;

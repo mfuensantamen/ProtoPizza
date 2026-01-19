@@ -17,18 +17,14 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.text.NumberFormat;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -46,11 +42,10 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 
-
 import app.Datos;
 import app.Mejora;
-import visuales.PizzaFXPane;
-import visuales.RoundedButton;
+import visuales.PizzaEfectos;
+import visuales.BotonRedondeado;
 
 // clase que refresca y genera elementos de interfaz visual
 public class Interfaz extends JFrame {
@@ -80,16 +75,16 @@ public class Interfaz extends JFrame {
 	private JLabel etiquetaPizza;
 
 	// efectos visuales del boton
-	private PizzaFXPane pizzaFX;
+	private PizzaEfectos pizzaFX;
 
 	// panel de mejoras
 	private JPanel panelInferior;
 	private JScrollPane scrollMejoras;
 
 	// listas de filas mejoras y botones
-	private List<Mejora> mejorasActivas = new ArrayList<>();
-	private List<Mejora> mejorasPasivas = new ArrayList<>();
-	private List<RoundedButton> botonesMejoras = new ArrayList<>();
+	private List<Mejora> mejorasActivas = new ArrayList<Mejora>();
+	private List<Mejora> mejorasPasivas = new ArrayList<Mejora>();
+	private List<BotonRedondeado> botonesMejoras = new ArrayList<BotonRedondeado>();
 
 	// fuente
 	public static Font fuente = new Font("Gadugi", Font.BOLD, 17);
@@ -115,68 +110,38 @@ public class Interfaz extends JFrame {
 	private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("es-ES"));
 
 	// tiempo de ejecucion
-
 	public Timer timerPartida = null;
-	public Timer timerClicks = null;
 	private JPanel panelTiempo;
 	private JLabel lblTiempo;
-	int segundos = 0;
-	int minutos = 0;
+	private int segundos = 0;
+	private int minutos = 0;
+	private boolean finPartida = false;
 	private JPanel panelDerecha;
 	public JLabel lblClicks;
-	double clicksSegundo;
-	double contadorClicks;
-	double ultimosClicks;
-	boolean contadorClicker = false;
-	double cps;
 
-	long tiempoPasado;
+	// =========================
+	// CPS (Clicks Por Segundo)
+	// =========================
+	private double cps = 0.0;
 
-	public double contadorClicks() {
+	// guardamos el último click en nanoTime (NO mezclar con currentTimeMillis)
+	private long lastClickNano = 0L;
 
-		timerClicks = new Timer(1000, new ActionListener() {
+	// timer que baja CPS aunque no haya clicks
+	private Timer timerCpsDecay;
+	private long lastDecayTickNano = 0L;
 
-			@Override
-			public void actionPerformed(ActionEvent event) {
+	// Ajustes "game feel"
+	private static final double CPS_MAX = 25.0; // tope razonable (ajusta si quieres)
+	private static final double CLICK_FILTER_MS = 5.0; // ignora eventos <20ms (ruido/duplicados)
+	private static final double SMOOTH_A = 0.86; // suavizado CPS (más alto = más estable)
+	private static final double SMOOTH_B = 0.15;
 
-				if (contadorClicker) {
-					contadorClicker = false;
-					cps = contadorClicks - ultimosClicks;
-					ultimosClicks = contadorClicks;
-				}
-			}
-		});
+	// Decay exponencial
+	private static final double GRACE_MS = 850.0; // tiempo de gracia sin bajar
+	private static final double DECAY_K = 1.2; // velocidad de caída (más alto = cae más rápido)
 
-		return contadorClicks;
-	}
-
-	public double reducirContador() {
-
-		new Timer(50, new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-
-				contadorClicks -= contadorClicks * .1;
-				refrescarInterfaz();
-			}
-		});
-		return contadorClicks;
-	}
-
-	public int timerPartida() {
-		timerPartida = new Timer(1000, new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				segundos++;
-				if (segundos > 59) {
-					segundos = 0;
-					minutos++;
-				}
-			}
-		});
-		return segundos;
-	}
-
+	// bloque init de nf
 	{
 		nf.setMaximumFractionDigits(0);
 		nf.setMinimumFractionDigits(0);
@@ -192,6 +157,10 @@ public class Interfaz extends JFrame {
 		construirInterfaz();
 		generarFilasDeMejoras();
 		feedbackBotonPizza();
+
+		// ✅ esto hace que baje SOLO aunque el usuario no clique
+		startCpsDecayTimer();
+
 		refrescarInterfaz();
 	}
 
@@ -199,9 +168,16 @@ public class Interfaz extends JFrame {
 	private ImageIcon cargarIconoRecurso(String ruta, int ancho, int alto) {
 		try {
 			URL url = getClass().getResource(ruta);
-			// enlace de recurso y buffer de icono
+			if (url == null) {
+				// si falta recurso, NO revienta
+				System.err.println("Recurso no encontrado: " + ruta);
+				return null;
+			}
 			BufferedImage icono = ImageIO.read(url);
-			// escala los iconos al tamaño necesario
+			if (icono == null) {
+				System.err.println("No se pudo leer imagen: " + ruta);
+				return null;
+			}
 			Image escalada = icono.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
 			return new ImageIcon(escalada);
 
@@ -209,7 +185,95 @@ public class Interfaz extends JFrame {
 			System.err.println("Error cargando archivo: " + ruta);
 			e.printStackTrace();
 			return null;
+		} catch (Exception e) {
+			System.err.println("Error cargando recurso: " + ruta);
+			e.printStackTrace();
+			return null;
 		}
+	}
+
+	// =========================
+	// CPS: registrar click
+	// =========================
+	public void contadorClicks() {
+		long now = System.nanoTime();
+
+		if (lastClickNano != 0L) {
+			long deltaNs = now - lastClickNano;
+			double deltaMs = deltaNs / 1_000_000.0;
+
+			// filtro anti-duplicados/ruido
+			if (deltaMs < CLICK_FILTER_MS) {
+				return;
+			}
+
+			double cpsAhora = 1000.0 / deltaMs;
+			if (cpsAhora > CPS_MAX)
+				cpsAhora = CPS_MAX;
+
+			// suavizado (EMA)
+			cps = cps * SMOOTH_A + cpsAhora * SMOOTH_B;
+		}
+
+		lastClickNano = now;
+	}
+
+	// =========================
+	// CPS: caída exponencial automática
+	// =========================
+	private void startCpsDecayTimer() {
+		timerCpsDecay = new Timer(50, e -> {
+			long now = System.nanoTime();
+
+			if (lastDecayTickNano == 0L) {
+				lastDecayTickNano = now;
+				updateCpsLabel();
+				return;
+			}
+
+			double dtSec = (now - lastDecayTickNano) / 1_000_000_000.0;
+			lastDecayTickNano = now;
+
+			if (lastClickNano != 0L) {
+				double sinClickMs = (now - lastClickNano) / 1_000_000.0;
+
+				// solo decae después del tiempo de gracia
+				if (sinClickMs > GRACE_MS) {
+					// decay exponencial: cps *= e^(-k * dt)
+					double factor = Math.exp(-DECAY_K * dtSec);
+					cps = cps * factor;
+
+					// limpieza para que no se quede en 0.00001
+					if (cps < 0.01)
+						cps = 0.0;
+				}
+			}
+
+			updateCpsLabel();
+		});
+
+		timerCpsDecay.start();
+	}
+
+	private void updateCpsLabel() {
+		if (lblClicks == null)
+			return;
+		if (cps < 0.01) {
+			lblClicks.setText("");
+		} else {
+			lblClicks.setText(String.format(localeES, "%.2f", cps));
+		}
+	}
+
+	public int timerPartida() {
+		timerPartida = new Timer(1000, e -> {
+			segundos++;
+			if (segundos > 59) {
+				segundos = 0;
+				minutos++;
+			}
+		});
+		return segundos;
 	}
 
 	// generacion de todos los elementos de la interfaz
@@ -221,7 +285,7 @@ public class Interfaz extends JFrame {
 
 		// panel superior
 		JPanel panelSuperior = new JPanel();
-		panelSuperior.setPreferredSize(new Dimension(850, 380));
+		panelSuperior.setPreferredSize(new Dimension(850, 390));
 		panelSuperior.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		panelSuperior.setBackground(new Color(150, 150, 170));
 		panelSuperior.setLayout(new BorderLayout(0, 0));
@@ -285,7 +349,7 @@ public class Interfaz extends JFrame {
 		etiquetaPizza.setPreferredSize(new Dimension(208, 208));
 
 		// efectos de feedback visuales de la pizza
-		pizzaFX = new PizzaFXPane(this.etiquetaPizza);
+		pizzaFX = new PizzaEfectos(this.etiquetaPizza);
 		pizzaFX.setOpaque(false);
 		// halo efecto autoclick
 		pizzaFX.setHaloColors(new Color(255, 215, 0), new Color(255, 245, 200));
@@ -303,12 +367,30 @@ public class Interfaz extends JFrame {
 		panelDerecha.setBorder(null);
 		panelDerecha.setLayout(new BoxLayout(panelDerecha, BoxLayout.LINE_AXIS));
 		panelSuperior.add(panelDerecha, BorderLayout.EAST);
+		Dimension anchoDerecha = new Dimension(100, 0);
+		panelDerecha.setPreferredSize(anchoDerecha);
+		panelDerecha.setMinimumSize(anchoDerecha);
+		panelDerecha.setMaximumSize(new Dimension(100, Integer.MAX_VALUE));
 
-		lblClicks = new JLabel("");
+		JPanel panelIzquierda = new JPanel();
+		panelIzquierda.setOpaque(false);
+		panelIzquierda.setPreferredSize(anchoDerecha);
+		panelDerecha.setMinimumSize(anchoDerecha);
+		panelDerecha.setMaximumSize(new Dimension(100, Integer.MAX_VALUE));
+		panelSuperior.add(panelIzquierda, BorderLayout.WEST);
+
+		lblClicks = new JLabel("00.00");
 		lblClicks.setVerticalAlignment(SwingConstants.TOP);
 		lblClicks.setForeground(new Color(255, 228, 225));
 		lblClicks.setHorizontalAlignment(SwingConstants.CENTER);
 		lblClicks.setFont(new Font("Consolas", Font.BOLD, 30));
+
+		Dimension d = lblClicks.getPreferredSize();
+		lblClicks.setPreferredSize(d);
+		lblClicks.setMinimumSize(d);
+		lblClicks.setMaximumSize(d);
+
+		lblClicks.setText("");
 		panelDerecha.add(lblClicks);
 
 		// panel inferior de la interfaz, mejoras
@@ -326,53 +408,51 @@ public class Interfaz extends JFrame {
 		setLocationRelativeTo(null);
 		setVisible(true);
 	}
-//////////////////// fin de generar interfaz
 
 	// feedback de hacer el boton de la pizza reaccione a click
 	private void feedbackBotonPizza() {
 		final int tiempoFeedback = 90;
 		timerPartida();
-		contadorClicks();
+
 		// si el ususario clicka la pizza
 		etiquetaPizza.addMouseListener(new MouseAdapter() {
-
 			@Override
 			public void mousePressed(MouseEvent e) {
 
-				if (timerPartida != null) {
-					contadorClicks++;
-					contadorClicker = true;
-					timerClicks.start();
-				}
+				// ✅ registra CPS antes del click lógico
 
-				if (timerPartida != null) {
+				contadorClicks();
+
+				if (timerPartida != null && !finPartida) {
 					timerPartida.start();
 				}
 
 				// se hace grande
 				etiquetaPizza.setIcon(iconoPizzaGrande);
+
 				// por 90ms
 				new Timer(tiempoFeedback, ejecuta -> {
-					// despues vuelve al tamaño normal
 					etiquetaPizza.setIcon(iconoPizzaNormal);
 					((Timer) ejecuta.getSource()).stop();
 				}).start();
-				// invoca pequeños iconos con el valor del click que desaparecen con el tiempo
-				double npc = datos.getClickIncremento() + datos.getNps() / 50.0;
+
+				// invoca pequeños iconos de pizzas
+				double nps = datos.getNps();
+				double npc = datos.getClickIncremento() + nps / 50.0;
 				pizzaFX.spawnClickFloat(npc, formatoAbreviado(npc, true, false));
+
 				// ejecuta la accion de clickar
 				datos.click();
-				// refresca la interfaz
+
+				// refresca interfaz
 				refrescarInterfaz();
 			}
 		});
 	}
-//////////////////// fin de efectos feedback pizza
 
 	// bucle que crea botones de mejora dinamicamente segun cuantas mejoras haya
-	private RoundedButton crearBotonMejora(Mejora m) {
-		// se crea el boton
-		RoundedButton btn = new RoundedButton("", 40);
+	private BotonRedondeado crearBotonMejora(Mejora m) {
+		BotonRedondeado btn = new BotonRedondeado("", 40);
 		btn.setLayout(new BorderLayout());
 		btn.setFocusPainted(false);
 		btn.setBackground(BTN_GRIS_NO);
@@ -382,17 +462,16 @@ public class Interfaz extends JFrame {
 		btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 		btn.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
 
-		// icono de la mejora
 		JLabel lblIcon = new JLabel();
 		lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
 		lblIcon.setVerticalAlignment(SwingConstants.CENTER);
 		lblIcon.setPreferredSize(new Dimension(62, 44));
-		// nombre de la mejora
+
 		JLabel lblLeft = new JLabel();
 		lblLeft.setFont(fuente);
 		lblLeft.setHorizontalAlignment(SwingConstants.LEFT);
 		lblLeft.setVerticalAlignment(SwingConstants.CENTER);
-		// coste de la mejora
+
 		JLabel lblRight = new JLabel();
 		lblRight.setFont(fuente);
 		lblRight.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -407,90 +486,66 @@ public class Interfaz extends JFrame {
 		btn.putClientProperty("left", lblLeft);
 		btn.putClientProperty("right", lblRight);
 
-		// se le adjunta la funcion de si el usuario clicka el boton verifica si se
-		// puede usar (si puede permitirse la mejora)
 		btn.addActionListener(ejecuta -> {
-			if (!datos.verificarCompra(m)) {
+			if (!datos.verificarCompra(m))
 				return;
-			}
-			// si se compra, se ejecuta el metodo comprar
+
 			m.comprar(datos);
-			// ligero flash verde para feedback de compra
+
 			long hasta = System.currentTimeMillis() + 70;
-			// añade el dato del tiempo en el boton para usar despues en los efectos
 			btn.putClientProperty(PROP_FLASH_UNTIL, hasta);
-			// se refresca la interfaz para añadior los cambios
+
 			refrescarInterfaz();
 		});
 
 		return btn;
 	}
-//////////////////// fin de crear boton mejora
 
 	// por cada mejora que haya, añade los botones necesarios para que aparezcan
 	private void generarFilasDeMejoras() {
-		// se limpia infromacion anterior
 		panelInferior.removeAll();
 		botonesMejoras.clear();
-		// bucle para lasmejoras activas
+
 		for (Mejora m : mejorasActivas) {
-			RoundedButton btn = crearBotonMejora(m);
+			BotonRedondeado btn = crearBotonMejora(m);
 			botonesMejoras.add(btn);
 			panelInferior.add(btn);
 			panelInferior.add(Box.createVerticalStrut(10));
 		}
-		// bucle para las mejoras pasivas
 		for (Mejora m : mejorasPasivas) {
-			RoundedButton btn = crearBotonMejora(m);
+			BotonRedondeado btn = crearBotonMejora(m);
 			botonesMejoras.add(btn);
 			panelInferior.add(btn);
 			panelInferior.add(Box.createVerticalStrut(10));
 		}
-		// se renderizan los botonerds
+
 		panelInferior.revalidate();
 		panelInferior.repaint();
 	}
-//////////////////// fin de creacion de filas de mejoras
 
 	private String formatoAbreviado(double n, boolean conDecimales, boolean numPrincipal) {
 		final String[] sufijos = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No" };
-
 		double abs = Math.abs(n);
 
-		// numPrincipal
 		if (numPrincipal) {
-			// menos de 1000 con decimales
 			if (abs < 1_000) {
-				String s = FORMATO_ENTERO_ES.format(abs);
-				return s;
+				return FORMATO_ENTERO_ES.format(abs);
 			}
-
-			// mas de 1000 menos de 100M sin abreviar con
 			if (abs <= 99_999_999) {
-				String s = FORMATO_ENTERO_ES.format(abs);
-				return s;
+				return FORMATO_ENTERO_ES.format(abs);
 			}
-
 			// mas de 100M abreviado con decimales
 			@SuppressWarnings("unused")
 			String s = abreviarNumeros(abs, true, sufijos);
-
 		}
 
-		// conDecimales otros
 		if (abs < 1_000) {
-			String s = conDecimales ? String.format(localeES, "%.2f", abs) : String.format(localeES, "%.0f", abs);
-			return s;
+			return conDecimales ? String.format(localeES, "%.2f", abs) : String.format(localeES, "%.0f", abs);
 		}
 
-		// mas de 1000 con o sin decimales segun parametro
-		String s = abreviarNumeros(abs, conDecimales, sufijos);
-		return s;
+		return abreviarNumeros(abs, conDecimales, sufijos);
 	}
 
-	// Abrevia dividiendo entre 1000 y añadiendo letra para abreviar
-	// Si conDecimales false sin decimales
-	// Si conDecimales true con decimales
 	private String abreviarNumeros(double n, boolean conDecimales, String[] sufijos) {
 		double valor = n;
 		int indice = 0;
@@ -500,7 +555,6 @@ public class Interfaz extends JFrame {
 			indice++;
 		}
 
-		// SIN decimales
 		if (!conDecimales) {
 			return String.format(localeES, "%.0f%s", valor, sufijos[indice]);
 		}
@@ -509,34 +563,28 @@ public class Interfaz extends JFrame {
 			return String.format(localeES, "%.2f%s", valor, sufijos[indice]);
 		}
 
-		// back up si no sale abreviacion
 		return String.format(localeES, "%.2f", valor);
 	}
 
-	// se ecncarga de actualozar el estado de ls botones de las mejras
-	private void actualizarBotonMejora(RoundedButton btn, Mejora m) {
+	private void actualizarBotonMejora(BotonRedondeado btn, Mejora m) {
 		JLabel icon = (JLabel) btn.getClientProperty("icon");
 		JLabel left = (JLabel) btn.getClientProperty("left");
 		JLabel right = (JLabel) btn.getClientProperty("right");
-		// boolean cno la informacion de si una mejora esta o no bloqueada
+
 		boolean desbloqueado = m.desbloquado(datos.getMaximo());
 		int nivel = m.getNivel();
-		// boolean cno la informacion de si una mejora puede o no ser comprada
 		boolean puedeComprar = desbloqueado && datos.verificarCompra(m);
 
-		// string que almacena informacion de estado de los atributos de cada mejora
 		String estado = desbloqueado + "|" + puedeComprar + "|" + nivel + "|" + (long) m.getCoste();
 		Object prev = btn.getClientProperty("estado");
 		boolean cambio = !estado.equals(prev);
 
-		// para generar flash del boton, feedback compra
 		Object v = btn.getClientProperty(PROP_FLASH_UNTIL);
 		long ahora = System.currentTimeMillis();
 		boolean tieneFlash = (v instanceof Long);
-		boolean flasheando = tieneFlash && ahora < (Long) v;
-		boolean expirado = tieneFlash && ahora >= (Long) v;
+		boolean flasheando = tieneFlash && ahora < ((Long) v).longValue();
+		boolean expirado = tieneFlash && ahora >= ((Long) v).longValue();
 
-		// si excede tiempo fuerza duracion de flash
 		boolean forzar = false;
 		if (expirado) {
 			btn.putClientProperty(PROP_FLASH_UNTIL, null);
@@ -547,22 +595,16 @@ public class Interfaz extends JFrame {
 
 		btn.putClientProperty("estado", estado);
 
-		// si no se puede comprar la mejora, icono de bloqueado
-		if (!puedeComprar) {
+		if (!puedeComprar)
 			btn.setIcon(iconoBloqueo);
-		} else {
-			// si no, sin icono
+		else
 			btn.setIcon(null);
-		}
 
-		// si esta bloqueado carga el icono de cbloqueado
 		if (!desbloqueado) {
 			icon.setIcon(cargarIconoRecurso("/img/link.png", 32, 32));
-			// mensaje del boton bloqueado
 			left.setText("            Requiere " + formatoAbreviado(m.getCoste(), true, false));
 			right.setText("");
 			left.setFont(fuente);
-			// un if preguntando si flasheando true, flashea, si false, bloqueado en rojo
 			btn.setBackground(flasheando ? BTN_FLASH : BTN_ROJO_LOCK);
 			btn.setEnabled(false);
 			btn.setCursor(Cursor.getDefaultCursor());
@@ -572,13 +614,11 @@ public class Interfaz extends JFrame {
 		ImageIcon ico = cargarIconoRecurso(m.getIconPath(), 32, 32);
 		icon.setIcon(ico);
 
-		// muestra nivel de la mejora en el boton
 		left.setText(m.getNombre() + "  [ " + nivel + " ]");
 		left.setFont(fuente);
 		right.setText(formatoAbreviado(m.getCoste(), true, false));
 		right.setFont(fuente);
 
-		// segun estado del boton monstrara un coloor diferente
 		if (flasheando)
 			btn.setBackground(BTN_FLASH);
 		else if (puedeComprar)
@@ -587,23 +627,21 @@ public class Interfaz extends JFrame {
 			btn.setBackground(BTN_GRIS_NO);
 
 		btn.setEnabled(puedeComprar);
-		// segun estado del boton, saldra puntero en el cursor
 		btn.setCursor(puedeComprar ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+
+		if (m.getNombre().equalsIgnoreCase("Impresora 3D de pizzas") && m.getNivel() == 1) {
+			timerPartida.stop();
+			finPartida = true;
+		}
 	}
 
-	// procedimiento que se encarga de refrescar la informacion de la interfaz cada
-	// tick de reloj interno
+	// procedimiento que se encarga de refrescar la informacion de la interfaz
 	public void refrescarInterfaz() {
-		// variables abreviadas
 		double nps = datos.getNps();
 		double npc = datos.getClickIncremento() + nps / 50.0;
 
-		if (cps == 1 || cps == 0) {
-			lblClicks.setText("");
-		} else {
-			lblClicks.setText(String.format("%.2f", cps));
-
-		}
+		// CPS label (también lo actualiza el timer, pero aquí no molesta)
+		updateCpsLabel();
 
 		if (segundos < 10) {
 			lblTiempo.setText("Tiempo de Partida: " + minutos + ":0" + segundos);
@@ -611,12 +649,9 @@ public class Interfaz extends JFrame {
 			lblTiempo.setText("Tiempo de Partida: " + minutos + ":" + segundos);
 		}
 
-		// si estan vacias se sale del procedimiento para evitar errores
 		if (botonesMejoras.isEmpty())
 			return;
 
-		// solo actualizara el numero grande si ha sido cambiado desde la ultima vez,
-		// para no refrescar innecesariamente
 		if (datos.getNum() != ultimoNumeroMostrado) {
 			ultimoNumeroMostrado = (long) datos.getNum();
 			lblNum.setText(formatoAbreviado(datos.getNum(), true, true));
@@ -626,32 +661,28 @@ public class Interfaz extends JFrame {
 
 		double periodoAuto = datos.getPeriodoAutoClicker();
 		String texto;
-		// si autoclicker aun no ha sido desbloqueado
+
 		if (datos.getNivelAutoClicker() == 0) {
-			// monstrara datos basicos
 			texto = npsBase;
 		} else {
-			// si ha seido desbloqueado mostrara informacion adicinal
 			texto = npsBase + String.format(localeES, "  |  Cocineros +%s cada %.2fs",
 					formatoAbreviado(npc, true, false), periodoAuto);
 		}
 
-		// verifica si ha sido alterado para no cargar refrescar innecesariamente
 		if (!texto.equals(ultimoTextoNps)) {
 			ultimoTextoNps = texto;
 			lblNps.setText(texto);
 		}
 
-		// si el autoclicker ha sido pulsado envia un efecto visual
 		if (datos.autoClickerPulsado()) {
 			pizzaFX.efectoHaloTick();
 		}
 
-		// bucles que van actualizando los botones de las mejoras uno a uno
 		int idx = 0;
 		for (Mejora m : mejorasActivas) {
 			actualizarBotonMejora(botonesMejoras.get(idx++), m);
 		}
+
 		for (Mejora m : mejorasPasivas) {
 			actualizarBotonMejora(botonesMejoras.get(idx++), m);
 		}

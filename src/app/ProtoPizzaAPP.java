@@ -16,8 +16,8 @@ public class ProtoPizzaAPP {
 	// * añadir clicker
 	// * añadir clicker automatico con mejoras
 	// * añadir boton grande imagen de pizza
-	// implementar un "timer" que lleva el tiempo de partida
-	// implementar contador de clicks por segundo en un lado de la pizza y si se
+	// * implementar un "timer" que lleva el tiempo de partida
+	// * implementar contador de clicks por segundo en un lado de la pizza y si se
 	// pasa de un umbral cambiar fondo de panel gris a otro color
 	// * probar a poner imagenes de emjojis en vez de strings y colocar el nombre de
 	// la mejora junto al icono a la derecha y dentrar todo

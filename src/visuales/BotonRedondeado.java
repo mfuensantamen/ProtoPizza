@@ -14,12 +14,12 @@ import javax.swing.SwingConstants;
  * Botón con estilo redondeado (custom painting). Reutilizable para mejoras y
  * acciones secundarias.
  */
-public class RoundedButton extends JButton {
+public class BotonRedondeado extends JButton {
 	// clase para generar boton con bordes redondeados
 
 	private final int radio;
 
-	public RoundedButton(String texto, int radio) {
+	public BotonRedondeado(String texto, int radio) {
 		super(texto);
 		this.radio = radio;
 
